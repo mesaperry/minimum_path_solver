@@ -1,1 +1,3 @@
 # nodal-maze
+
+empty
