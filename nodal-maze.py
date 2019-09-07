@@ -1,6 +1,12 @@
 '''
 graph implementation modified from the original here:
 https://runestone.academy/runestone/books/published/pythonds/Graphs/Implementation.html
+
+
+
+TODO:
+
+
 '''
 
 import tkinter as tk
@@ -70,10 +76,16 @@ def main():
 	class App:
 		def __init__(self, canvas):
 			self.c = canvas
+			self.c.focus_set()
 			self.g = Graph()
 			self.selected_node = None
+			self.start_node = None
+			self.end_node = None
 
-			self.c.bind('<Button-1>', self.canvasClick)
+			self.c.bind('<Button-1>', self.canvasLeftClick)
+			self.c.bind('<Button-2>', self.canvasMiddleClick)
+			self.c.bind('<Button-3>', self.canvasRightClick)
+			self.c.bind('<space>', self.canvasSpace)
 
 		def drawCircle(self, x, y):
 			x0 = x - node_r
@@ -99,42 +111,105 @@ def main():
 			else:
 				return None
 
-		def canvasClick(self, event):
+		def applyOGColor(self, node):
+			if node == self.start_node:
+				self.c.itemconfig(node, fill='green')
+			elif node == self.end_node:
+				self.c.itemconfig(node, fill='red')
+			else:
+				self.c.itemconfig(node, fill='black')
+
+		# def displayMessage(self, message, time_s=7):
+			#display message on top left of screen for t=time_s seconds, default is 7, 0 is infinite
+
+
+		def canvasLeftClick(self, event):
 			mouse_x, mouse_y = event.x, event.y
 
-			if self.g.numVertices == 0: #place first node
-				circle = self.drawCircle(mouse_x, mouse_y)
-				self.g.addVert(circle)
+			clicked_node = self.circleClicked(mouse_x, mouse_y)
 
-			else: #place subsequent nodes
-				clicked_node = self.circleClicked(mouse_x, mouse_y)
+			if clicked_node: #if a node was selected
+				if not self.selected_node: #if no node already selected
+					self.c.itemconfig(clicked_node, fill='grey')
+					self.selected_node = clicked_node #select this node
+				else: #selecting second node to connect
+					v1 = self.g.getVert(clicked_node) #check if nodes already connected
+					v2 = self.g.getVert(self.selected_node)
+					if v2 in v1.getConnectedVert():
+						return
 
-				if clicked_node: #if a node was selected
-					if not self.selected_node: #if no node already selected
-						self.c.itemconfig(clicked_node, fill='grey')
-						self.selected_node = clicked_node #select this node
-					else: #selecting second node to connect
-						v1 = self.g.getVert(clicked_node) #check if nodes already connected
-						v2 = self.g.getVert(self.selected_node)
-						if v2 in v1.getConnectedVert():
-							return
-							
-						self.c.itemconfig(self.selected_node, fill='black')
-						x0, y0 = self.getCoords(self.selected_node)
-						x1, y1 = self.getCoords(clicked_node)
-						line = self.drawLine(x0, y0, x1, y1)
-						self.g.addEdge(self.selected_node, clicked_node, line)
-						self.selected_node = None
+					self.applyOGColor(self.selected_node)
+					x0, y0 = self.getCoords(self.selected_node)
+					x1, y1 = self.getCoords(clicked_node)
+					line = self.drawLine(x0, y0, x1, y1)
+					self.g.addEdge(self.selected_node, clicked_node, line)
+					self.selected_node = None
 
-				else: #if clicked on empty space
-					if self.selected_node: #if a node is already selected, create a new node and connect it
-						self.c.itemconfig(self.selected_node, fill='black')
-						circle = self.drawCircle(mouse_x, mouse_y)
-						self.g.addVert(circle)
-						old_x, old_y = self.getCoords(self.selected_node)
-						line = self.drawLine(mouse_x, mouse_y, old_x, old_y)
-						self.g.addEdge(self.selected_node, circle, line)
-						self.selected_node = None
+			else: #if clicked on empty space
+				for circle in self.g.vertices.values():
+					found_x, found_y = self.getCoords(circle)
+					dist = sqrt((found_x-mouse_x)**2 + (found_y-mouse_y)**2)
+					if dist <= node_r*3: #don't create if too close to existing node
+						return
+
+				if self.selected_node: #if a node is already selected, create a new node and connect it
+					self.applyOGColor(self.selected_node)
+					circle = self.drawCircle(mouse_x, mouse_y)
+					self.g.addVert(circle)
+					old_x, old_y = self.getCoords(self.selected_node)
+					line = self.drawLine(mouse_x, mouse_y, old_x, old_y)
+					self.g.addEdge(self.selected_node, circle, line)
+					self.selected_node = None
+				else: #create a new node
+					circle = self.drawCircle(mouse_x, mouse_y)
+					self.g.addVert(circle)
+
+
+		def canvasMiddleClick(self, event):
+			mouse_x, mouse_y = event.x, event.y
+			clicked_node = self.circleClicked(mouse_x, mouse_y)
+
+			if self.selected_node: #deselect current node
+				self.c.itemconfig(self.selected_node, fill='black')
+				self.selected_node = None
+				if not clicked_node:
+					return
+			if self.start_node: #remove previous start node
+				self.c.itemconfig(self.start_node, fill='black')
+				self.start_node = None
+
+			if clicked_node:
+				if clicked_node == self.end_node: #overwrite end node
+					self.end_node = None
+
+				self.c.itemconfig(clicked_node, fill='green')
+				self.start_node = clicked_node
+
+
+		def canvasRightClick(self, event):
+			mouse_x, mouse_y = event.x, event.y
+			clicked_node = self.circleClicked(mouse_x, mouse_y)
+
+			if self.selected_node: #deselect current node
+				self.c.itemconfig(self.selected_node, fill='black')
+				self.selected_node = None
+				if not clicked_node:
+					return
+			if self.end_node: #remove previous end node
+				self.c.itemconfig(self.end_node, fill='black')
+				self.end_node = None
+
+			if clicked_node:
+				if clicked_node == self.start_node: #overwrite start node
+					self.start_node = None
+
+				self.c.itemconfig(clicked_node, fill='red')
+				self.end_node = clicked_node
+
+		def canvasSpace(self, event):
+			print('meme')
+			if self.start_node and self.end_node:
+				pass
 
 		def draw(self):
 			self.c.after(50, self.draw)
