@@ -5,113 +5,131 @@ https://runestone.academy/runestone/books/published/pythonds/Graphs/Implementati
 
 import tkinter as tk
 from math import sqrt
-from random import randint
 
-node_r = 10
+node_r = 10 #size of node circles
+
+class Vertex:
+	def __init__(self, data):
+		self.data = data
+		self.connected_to = {}
+
+	def addConnected(self, vert, edge_data):
+		self.connected_to[vert] = edge_data
+
+	def getConnectedVert(self):
+		return self.connectedTo.keys()
+
+	def getConnectedEdge(self):
+		return self.connectedTo.values()
+
+	def getData(self):
+		return self.data
+
+class Graph:
+	def __init__(self):
+		self.vertices = {}
+		self.numVertices = 0
+
+	def addVert(self,data):
+		self.numVertices = self.numVertices + 1
+		newVertex = Vertex(data)
+		self.vertices[newVertex] = data
+		return newVertex
+
+	def addEdge(self,v1,v2,edge_data=None):
+		v1.addConnected(v2, edge_data)
+		v2.addConnected(v1, edge_data)
+
+	def getData(self,vertex):
+		if vertex in self.vertices.keys:
+			return self.vertices[vertex]
+		else:
+			return None
+
+	def getVert(self,data):
+		for key, value in self.vertices.items():
+			if value == data:
+				vert = key
+				return vert
+
+	def getVertices(self):
+		return self.vertices.keys()
+
 
 def main():
-	class Vertex():
-		def __init__(self, key):
-			self.id = key
-			self.connectedTo = {}
-
-		def addNeighbor(self, nbr, weight=0):
-			self.connectedTo[nbr] = weight
-
-		def __str__(self):
-			return str(self.id) + ' connectedTo: ' + str([x.id for x in self.connectedTo])
-
-		def getConnections(self):
-			return self.connectedTo.keys()
-
-		def getId(self):
-			return self.id
-
-		def getWeight(self,nbr):
-			return self.connectedTo[nbr]
-
-	class graph:
-		def __init__(self):
-			self.vertList = {}
-			self.numVertices = 0
-
-		def addVertex(self,key):
-			self.numVertices = self.numVertices + 1
-			newVertex = Vertex(key)
-			self.vertList[key] = newVertex
-			return newVertex
-
-		def getVertex(self,n):
-			if n in self.vertList:
-				return self.vertList[n]
-			else:
-				return None
-
-		def __contains__(self,n):
-			return n in self.vertList
-
-		def addEdge(self,f,t,cost=0):
-			if f not in self.vertList:
-				nv = self.addVertex(f)
-			if t not in self.vertList:
-				nv = self.addVertex(t)
-			self.vertList[f].addNeighbor(self.vertList[t], cost)
-
-		def getVertices(self):
-			return self.vertList.keys()
-
-		def __iter__(self):
-			return iter(self.vertList.values())
-
-	def drawCircle(x, y):
-		x0 = x - node_r
-		y0 = y - node_r
-		x1 = x + node_r
-		y1 = y + node_r
-		return c.create_oval(x0, y0, x1, y1, fill='black', tags=(x,y))
-
-	def drawLine(x0, y0, x1, y1):
-		return c.create_line(x0, y0, x1, y1)
-
 	root = tk.Tk()
+	root.title = 'nodal-maze'
 	root.attributes('-fullscreen', True)
 	width, height = root.winfo_screenwidth(), root.winfo_screenheight()
 
+	canvas = tk.Canvas(root, width=width, height=height)
+	canvas.pack()
 
-	main_graph = graph()
-	selected_node = True
+	class App:
+		def __init__(self, canvas):
+			self.c = canvas
+			self.g = Graph()
+			self.selected_node = None
 
-	def callback(event):
-		mouse_x, mouse_y = event.x, event.y
+			self.c.bind('<Button-1>', self.canvasClick)
+			# self.c.tag_bind(canvas_item_id ,'<ButtonPress-1>', self.itemClicked)
 
-		if main_graph.numVertices == 0: #place first node
-			node = drawCircle(mouse_x, mouse_y)
-			main_graph.addVertex(node)
-		else: #place subsequent nodes
-			print(selected_node)
-			if not selected_node: #first, select node to branch from
-				found_node = c.find_closest(mouse_x, mouse_y)
-				found_x = int((c.coords(found_node)[2] + c.coords(found_node)[0])/2)
-				found_y = int((c.coords(found_node)[3] + c.coords(found_node)[1])/2)
-				dist = sqrt((found_x-mouse_x)**2 + (found_y-mouse_y)**2)
-				if dist <= node_r:
-					c.itemconfig(found_node, fill='grey')
-					selected_node = found_node
-			else: #then create a neighbor node
-				node = drawCircle(mouse_x, mouse_y)
-				main_graph.addVertex(node)
-				c.itemconfig(selected_node, fill='black')
-				selected_node = None
+		def drawCircle(self, x, y):
+			x0 = x - node_r
+			y0 = y - node_r
+			x1 = x + node_r
+			y1 = y + node_r
+			return self.c.create_oval(x0, y0, x1, y1, fill='black', tags=(x,y))
+
+		def drawLine(self, x0, y0, x1, y1):
+			return self.c.create_line(x0, y0, x1, y1)
+
+		def createSpecifier(self, shape):
+			return
+
+		def getCoords(self, node):
+			x = int((self.c.coords(node)[2] + self.c.coords(node)[0])/2)
+			y = int((self.c.coords(node)[3] + self.c.coords(node)[1])/2)
+			return x, y
+
+		def itemClicked(self, event):
+			return
+
+		def canvasClick(self, event):
+			mouse_x, mouse_y = event.x, event.y
+
+			if self.g.numVertices == 0: #place first node
+				circle = self.drawCircle(mouse_x, mouse_y)
+				new_node = (circle,)
+				self.g.addVert(new_node)
+			else: #place subsequent nodes
+				if not self.selected_node: #first, select node to branch from
+					found_node = self.c.find_closest(mouse_x, mouse_y)
+					found_x, found_y = self.getCoords(found_node)
+					dist = sqrt((found_x-mouse_x)**2 + (found_y-mouse_y)**2)
+					if dist <= node_r:
+						self.c.itemconfig(found_node, fill='grey')
+						self.selected_node = found_node
+				else: #then create a neighbor node
+					circle = self.drawCircle(mouse_x, mouse_y)
+					new_node = (circle,)
+					self.g.addVert(new_node)
+					self.c.itemconfig(self.selected_node, fill='black')
+					new_x, new_y = self.getCoords(new_node)
+					old_x, old_y = self.getCoords(self.selected_node)
+					line = self.drawLine(new_x, new_y, old_x, old_y)
+					new_edge = (line,)
+					self.g.addEdge(self.g.getVert(self.selected_node), self.g.getVert(new_node), new_edge)
+					self.selected_node = None
+
+		def draw(self):
+			self.c.after(50, self.draw)
 
 
-	def motion(event):
-		mouse_x, mouse_y = event.x, event.y
 
-	c = tk.Canvas(root, width=width, height=height)
-	root.bind('<Button-1>', callback)
-	root.bind('<Motion>', motion)
-	c.pack()
 
+	app = App(canvas)
+	app.draw()
 	root.mainloop()
 
 if __name__== "__main__":
