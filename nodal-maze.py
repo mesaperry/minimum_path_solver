@@ -1,5 +1,5 @@
 '''
-based on graph implementation from here:
+graph implementation modified from the original here:
 https://runestone.academy/runestone/books/published/pythonds/Graphs/Implementation.html
 '''
 
@@ -17,10 +17,10 @@ class Vertex:
 		self.connected_to[vert] = edge_data
 
 	def getConnectedVert(self):
-		return self.connectedTo.keys()
+		return self.connected_to.keys()
 
 	def getConnectedEdge(self):
-		return self.connectedTo.values()
+		return self.connected_to.values()
 
 	def getData(self):
 		return self.data
@@ -36,7 +36,9 @@ class Graph:
 		self.vertices[newVertex] = data
 		return newVertex
 
-	def addEdge(self,v1,v2,edge_data=None):
+	def addEdge(self,vd1,vd2,edge_data=None):
+		v1 = self.getVert(vd1)
+		v2 = self.getVert(vd2)
 		v1.addConnected(v2, edge_data)
 		v2.addConnected(v1, edge_data)
 
@@ -72,7 +74,6 @@ def main():
 			self.selected_node = None
 
 			self.c.bind('<Button-1>', self.canvasClick)
-			# self.c.tag_bind(canvas_item_id ,'<ButtonPress-1>', self.itemClicked)
 
 		def drawCircle(self, x, y):
 			x0 = x - node_r
@@ -84,43 +85,56 @@ def main():
 		def drawLine(self, x0, y0, x1, y1):
 			return self.c.create_line(x0, y0, x1, y1)
 
-		def createSpecifier(self, shape):
-			return
-
 		def getCoords(self, node):
 			x = int((self.c.coords(node)[2] + self.c.coords(node)[0])/2)
 			y = int((self.c.coords(node)[3] + self.c.coords(node)[1])/2)
 			return x, y
 
-		def itemClicked(self, event):
-			return
+		def circleClicked(self, x, y):
+			for circle in self.g.vertices.values():
+				found_x, found_y = self.getCoords(circle)
+				dist = sqrt((found_x-x)**2 + (found_y-y)**2)
+				if dist <= node_r: #check if click is within circle bounds
+					return circle
+			else:
+				return None
 
 		def canvasClick(self, event):
 			mouse_x, mouse_y = event.x, event.y
 
 			if self.g.numVertices == 0: #place first node
 				circle = self.drawCircle(mouse_x, mouse_y)
-				new_node = (circle,)
-				self.g.addVert(new_node)
+				self.g.addVert(circle)
+
 			else: #place subsequent nodes
-				if not self.selected_node: #first, select node to branch from
-					found_node = self.c.find_closest(mouse_x, mouse_y)
-					found_x, found_y = self.getCoords(found_node)
-					dist = sqrt((found_x-mouse_x)**2 + (found_y-mouse_y)**2)
-					if dist <= node_r:
-						self.c.itemconfig(found_node, fill='grey')
-						self.selected_node = found_node
-				else: #then create a neighbor node
-					circle = self.drawCircle(mouse_x, mouse_y)
-					new_node = (circle,)
-					self.g.addVert(new_node)
-					self.c.itemconfig(self.selected_node, fill='black')
-					new_x, new_y = self.getCoords(new_node)
-					old_x, old_y = self.getCoords(self.selected_node)
-					line = self.drawLine(new_x, new_y, old_x, old_y)
-					new_edge = (line,)
-					self.g.addEdge(self.g.getVert(self.selected_node), self.g.getVert(new_node), new_edge)
-					self.selected_node = None
+				clicked_node = self.circleClicked(mouse_x, mouse_y)
+
+				if clicked_node: #if a node was selected
+					if not self.selected_node: #if no node already selected
+						self.c.itemconfig(clicked_node, fill='grey')
+						self.selected_node = clicked_node #select this node
+					else: #selecting second node to connect
+						v1 = self.g.getVert(clicked_node) #check if nodes already connected
+						v2 = self.g.getVert(self.selected_node)
+						if v2 in v1.getConnectedVert():
+							return
+							
+						self.c.itemconfig(self.selected_node, fill='black')
+						x0, y0 = self.getCoords(self.selected_node)
+						x1, y1 = self.getCoords(clicked_node)
+						line = self.drawLine(x0, y0, x1, y1)
+						self.g.addEdge(self.selected_node, clicked_node, line)
+						self.selected_node = None
+
+				else: #if clicked on empty space
+					if self.selected_node: #if a node is already selected, create a new node and connect it
+						self.c.itemconfig(self.selected_node, fill='black')
+						circle = self.drawCircle(mouse_x, mouse_y)
+						self.g.addVert(circle)
+						old_x, old_y = self.getCoords(self.selected_node)
+						line = self.drawLine(mouse_x, mouse_y, old_x, old_y)
+						self.g.addEdge(self.selected_node, circle, line)
+						self.selected_node = None
 
 		def draw(self):
 			self.c.after(50, self.draw)
