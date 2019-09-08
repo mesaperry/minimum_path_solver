@@ -12,7 +12,7 @@ TODO:
 import tkinter as tk
 from math import sqrt
 
-node_r = 30 #size of node circles
+node_r = 20 #size of node circles
 
 class Vertex:
 	def __init__(self, data):
@@ -252,7 +252,7 @@ def main():
 
 
 			if self.s_to_parse: #continue recursion if remaining connected nodes
-				self.c.after(500, self.solve)
+				self.c.after(200, self.solve)
 			else: #no remaining connected nodes and end node was not found
 				self.displayMessage('Start node and end node not connected')
 				return
