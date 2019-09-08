@@ -5,7 +5,8 @@ https://runestone.academy/runestone/books/published/pythonds/Graphs/Implementati
 
 
 TODO:
-
+* deletion
+* reset
 
 '''
 
@@ -146,7 +147,7 @@ def main():
 					else: #selecting second node to connect
 						v1 = self.g.getVert(clicked_node) #check if nodes already connected
 						v2 = self.g.getVert(self.selected_node)
-						if v2 in v1.getConnectedVert():
+						if v2 in v1.getConnectedVert() or v1==v2:
 							return
 
 						self.applyOGColor(self.selected_node)
