@@ -1,6 +1,9 @@
 '''
 Created by Mesa Perry
 
+github:
+https://github.com/mesperrus/minimum_path_solver
+
 Uses the tkinter GUI for interactive graph creation. The user can create a graph, designate a start and end node,
 then watch a breadth first search algorithm find the shortest path.
 
