@@ -7,6 +7,7 @@ https://runestone.academy/runestone/books/published/pythonds/Graphs/Implementati
 TODO:
 * deletion
 * reset
+* tooltips
 
 '''
 
@@ -14,6 +15,7 @@ import tkinter as tk
 from math import sqrt
 
 node_r = 20 #size of node circles
+text_size = 25 #size of text
 
 class Vertex:
 	def __init__(self, data):
@@ -24,14 +26,15 @@ class Vertex:
 	def addConnected(self, vert, edge_data):
 		self.connected_to[vert] = edge_data
 
+	def delConnected(self, vert):
+		self.connected_to.pop(vert)
+
 	def getConnectedVert(self):
 		return self.connected_to.keys()
 
 	def getConnectedEdge(self):
 		return self.connected_to.values()
 
-	def getData(self):
-		return self.data
 
 class Graph:
 	def __init__(self):
@@ -49,6 +52,13 @@ class Graph:
 		v2 = self.getVert(vd2)
 		v1.addConnected(v2, edge_data)
 		v2.addConnected(v1, edge_data)
+
+	def delVert(self, vert):
+		neighbors = vert.getConnectedVert()
+		for neighbor in neighbors:
+			neighbor.delConnected(vert)
+		self.vertices.pop(vert)
+		self.numVertices -= 1
 
 	def getData(self,vertex):
 		if vertex in self.vertices.keys():
@@ -74,11 +84,22 @@ def main():
 
 	canvas = tk.Canvas(root, width=width, height=height)
 	canvas.pack()
+	canvas.focus_set()
 
 	class App:
 		def __init__(self, canvas):
 			self.c = canvas
-			self.c.focus_set()
+			self.c.bind('<Button-1>', self.leftClick)
+			self.c.bind('<Button-2>', self.middleClick)
+			self.c.bind('<Button-3>', self.rightClick)
+			self.c.bind('<space>', self.space)
+			self.c.bind('<Escape>', self.escape)
+			self.c.bind('<BackSpace>', self.backspace)
+
+			self.reset()
+
+		def reset(self):
+			self.c.delete("all")
 			self.g = Graph()
 			self.selected_node = None
 			self.start_node = None
@@ -87,11 +108,9 @@ def main():
 			self.s_current_vert = None
 			self.s_to_parse = []
 			self.s_passed = []
-
-			self.c.bind('<Button-1>', self.canvasLeftClick)
-			self.c.bind('<Button-2>', self.canvasMiddleClick)
-			self.c.bind('<Button-3>', self.canvasRightClick)
-			self.c.bind('<space>', self.canvasSpace)
+			self.tooltip = self.displayMessage(["Left click to place node, middle click to select start,",
+										   "right click to select end, backspace to delete,",
+										   "spacebar to solve, escape to quit"])
 
 		def drawCircle(self, x, y):
 			x0 = x - node_r
@@ -108,7 +127,7 @@ def main():
 			y = int((self.c.coords(node)[3] + self.c.coords(node)[1])/2)
 			return x, y
 
-		def circleClicked(self, x, y):
+		def circleHighlighted(self, x, y):
 			for circle in self.g.vertices.values():
 				found_x, found_y = self.getCoords(circle)
 				dist = sqrt((found_x-x)**2 + (found_y-y)**2)
@@ -126,19 +145,30 @@ def main():
 				self.c.itemconfig(node, fill='black')
 
 		def displayMessage(self, message):
-			size = 30
-			x = int(width / 2)
-			y = int(height - size)
-			return self.c.create_text(x, y,
-							   font="Times "+str(size)+" bold",
-							   text=message)
+			#display message on top center of canvas
+			if type(message)==list:
+				message_shape = []
+				for i, line in enumerate(message):
+					x = int(width / 2)
+					y = text_size * (i+1)*1.2
+					message_shape.append(self.c.create_text(x, y,
+							   			  					font="Times "+str(text_size)+" bold",
+								   			  				text=line))
+				return message_shape
+
+			elif type(message)==str:
+				x = int(width / 2)
+				y = text_size*1.2
+				return self.c.create_text(x, y,
+							   			  font="Times "+str(text_size)+" bold",
+							   			  text=message)
 
 
-		def canvasLeftClick(self, event):
+		def leftClick(self, event):
 			mouse_x, mouse_y = event.x, event.y
 
 			if self.state == 'editing':
-				clicked_node = self.circleClicked(mouse_x, mouse_y)
+				clicked_node = self.circleHighlighted(mouse_x, mouse_y)
 
 				if clicked_node: #if a node was selected
 					if not self.selected_node: #if no node already selected
@@ -177,11 +207,11 @@ def main():
 						self.g.addVert(circle)
 
 
-		def canvasMiddleClick(self, event):
+		def middleClick(self, event):
 			mouse_x, mouse_y = event.x, event.y
 			
 			if self.state == 'editing':
-				clicked_node = self.circleClicked(mouse_x, mouse_y)
+				clicked_node = self.circleHighlighted(mouse_x, mouse_y)
 
 				if self.selected_node: #deselect current node
 					self.c.itemconfig(self.selected_node, fill='black')
@@ -200,11 +230,11 @@ def main():
 					self.start_node = clicked_node
 
 
-		def canvasRightClick(self, event):
+		def rightClick(self, event):
 			mouse_x, mouse_y = event.x, event.y
 			
 			if self.state == 'editing':
-				clicked_node = self.circleClicked(mouse_x, mouse_y)
+				clicked_node = self.circleHighlighted(mouse_x, mouse_y)
 
 				if self.selected_node: #deselect current node
 					self.c.itemconfig(self.selected_node, fill='black')
@@ -222,12 +252,37 @@ def main():
 					self.c.itemconfig(clicked_node, fill='red')
 					self.end_node = clicked_node
 
-		def canvasSpace(self, event):
-			if self.start_node and self.end_node and self.state=='editing':
+		def space(self, event):
+			if self.state=='editing' and self.start_node and self.end_node:
 				self.state = 'solving'
+				for line in self.tooltip:
+					self.c.delete(line)
 
 				self.s_to_parse.append(self.g.getVert(self.start_node))
 				self.c.after(0, self.solve)
+
+			if self.state == 'done':
+				self.c.after(0, self.reset)
+
+		def escape(self, event):
+			exit()
+
+		def backspace(self, event):
+			mouse_x, mouse_y = event.x, event.y
+
+			if self.state == 'editing':
+				target_circle = self.circleHighlighted(mouse_x, mouse_y)
+				if target_circle: #delete node if highlighted
+					target_vert = self.g.getVert(target_circle)
+					self.c.delete(target_circle) #remove from canvas
+					connected_edges = target_vert.getConnectedEdge()
+					for edge in connected_edges:
+						self.c.delete(edge)
+					self.g.delVert(target_vert) #remove from graph
+					if target_circle==self.selected_node:
+						self.selected_node = None
+
+
 
 
 		def solve(self): #recursively call
@@ -239,7 +294,8 @@ def main():
 					self.c.itemconfig(self.g.getData(vert), fill='blue')
 					vert = vert.parent
 					path_count += 1
-				self.displayMessage('Found minimum path with '+str(path_count+2)+' nodes')
+				self.state = 'done'
+				self.displayMessage('Found minimum path with '+str(path_count+2)+' nodes. Press space to reset')
 				return
 
 			if not (vert==self.g.getVert(self.start_node) or vert==self.g.getVert(self.end_node)): #keep start and end nodes
@@ -255,16 +311,14 @@ def main():
 			if self.s_to_parse: #continue recursion if remaining connected nodes
 				self.c.after(200, self.solve)
 			else: #no remaining connected nodes and end node was not found
-				self.displayMessage('Start node and end node not connected')
+				self.state = 'done'
+				self.displayMessage('Start and end node not connected. Press space to reset')
 				return
 
 
 
 		def draw(self):
 			self.c.after(50, self.draw)
-
-
-
 
 
 	app = App(canvas)
