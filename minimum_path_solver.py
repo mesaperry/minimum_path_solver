@@ -310,7 +310,7 @@ def main():
 				self.c.itemconfig(c_circle, fill='light blue')
 			if c_circle!=self.start_node: #increment distance of each node except start
 				vert.distance = vert.parent.distance+1
-			self.placeNumberOnCircle(c_circle, vert.distance+1)
+			self.placeNumberOnCircle(c_circle, vert.distance)
 			self.s_passed.append(vert)
 
 			for neighbor in vert.getConnectedVert():
@@ -327,7 +327,7 @@ def main():
 					vert = vert.parent
 					path_count += 1
 				self.state = 'done'
-				self.displayMessage('Found minimum path with '+str(path_count+2)+' nodes. Press space to reset')
+				self.displayMessage('Found a minimum path of '+str(path_count+1)+'. Press space to reset')
 				return
 
 			if self.s_to_parse: #continue recursion if remaining connected nodes
