@@ -1,14 +1,12 @@
 '''
-graph implementation modified from the original here:
+Created by Mesa Perry
+
+Uses the tkinter GUI for interactive graph creation. The user can create a graph, designate a start and end node,
+then watch a breadth first search algorithm find the shortest path.
+
+
+Graph implementation modified from the original here:
 https://runestone.academy/runestone/books/published/pythonds/Graphs/Implementation.html
-
-
-
-TODO:
-* deletion
-* reset
-* tooltips
-
 '''
 
 import tkinter as tk
@@ -22,6 +20,7 @@ class Vertex:
 		self.data = data
 		self.connected_to = {}
 		self.parent = None
+		self.distance = 0
 
 	def addConnected(self, vert, edge_data):
 		self.connected_to[vert] = edge_data
@@ -112,15 +111,7 @@ def main():
 										   "right click to select end, backspace to delete,",
 										   "spacebar to solve, escape to quit"])
 
-		def drawCircle(self, x, y):
-			x0 = x - node_r
-			y0 = y - node_r
-			x1 = x + node_r
-			y1 = y + node_r
-			return self.c.create_oval(x0, y0, x1, y1, fill='black', tags=(x,y))
 
-		def drawLine(self, x0, y0, x1, y1):
-			return self.c.create_line(x0, y0, x1, y1)
 
 		def getCoords(self, node):
 			x = int((self.c.coords(node)[2] + self.c.coords(node)[0])/2)
@@ -144,6 +135,18 @@ def main():
 			else:
 				self.c.itemconfig(node, fill='black')
 
+		def drawCircle(self, x, y):
+			x0 = x - node_r
+			y0 = y - node_r
+			x1 = x + node_r
+			y1 = y + node_r
+			return self.c.create_oval(x0, y0, x1, y1, fill='black', tags=(x,y))
+
+		def drawLine(self, x0, y0, x1, y1):
+			line = self.c.create_line(x0, y0, x1, y1)
+			self.c.tag_lower(line)
+			return line
+
 		def displayMessage(self, message):
 			#display message on top center of canvas
 			if type(message)==list:
@@ -162,6 +165,15 @@ def main():
 				return self.c.create_text(x, y,
 							   			  font="Times "+str(text_size)+" bold",
 							   			  text=message)
+
+		def placeNumberOnCircle(self, node, num):
+			x, y = self.getCoords(node)
+			return self.c.create_text(x, y,
+						   			  font="Times "+str(node_r)+" bold",
+						   			  text=num)
+
+
+
 
 
 		def leftClick(self, event):
@@ -285,28 +297,35 @@ def main():
 
 
 
+
 		def solve(self): #recursively call
 			vert = self.s_to_parse.pop(0)
-			if vert==self.g.getVert(self.end_node):
+			c_circle = self.g.getData(vert)
+
+
+			if c_circle!=self.start_node and c_circle!=self.end_node: #keep start and end nodes color
+				self.c.itemconfig(c_circle, fill='light blue')
+			if c_circle!=self.start_node: #increment distance of each node except start
+				vert.distance = vert.parent.distance+1
+			self.placeNumberOnCircle(c_circle, vert.distance+1)
+			self.s_passed.append(vert)
+
+			for neighbor in vert.getConnectedVert():
+				if neighbor not in self.s_to_parse and neighbor not in self.s_passed:
+					neighbor.parent = vert
+					self.s_to_parse.append(neighbor)
+
+
+			if vert==self.g.getVert(self.end_node): #'found minimum path' ending procedure
 				vert = vert.parent
 				path_count = 0
-				while not vert==self.g.getVert(self.start_node):
+				while self.g.getData(vert)!=self.start_node:
 					self.c.itemconfig(self.g.getData(vert), fill='blue')
 					vert = vert.parent
 					path_count += 1
 				self.state = 'done'
 				self.displayMessage('Found minimum path with '+str(path_count+2)+' nodes. Press space to reset')
 				return
-
-			if not (vert==self.g.getVert(self.start_node) or vert==self.g.getVert(self.end_node)): #keep start and end nodes
-				self.c.itemconfig(self.g.getData(vert), fill='light blue')
-			self.s_passed.append(vert)
-
-			for neighbor in vert.getConnectedVert():
-				if neighbor not in self.s_passed:
-					self.s_to_parse.append(neighbor)
-					neighbor.parent = vert
-
 
 			if self.s_to_parse: #continue recursion if remaining connected nodes
 				self.c.after(200, self.solve)
