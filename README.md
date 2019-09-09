@@ -1,6 +1,6 @@
 # minimum_path_solver
 
-This python script, minimum_path_solver.py, functions as an interactive way to create graphs and visualize finding a minimum path. The tkinter library is used as GUI. I based the graph structure off of an implementation found here: https://runestone.academy/runestone/books/published/pythonds/Graphs/Implementation.html
+This python script, minimum_path_solver.py, functions as an interactive way to create unweighted, undirected graphs and visualize finding a minimum path. The tkinter library is used as GUI. I based the graph structure off of an implementation found here: https://runestone.academy/runestone/books/published/pythonds/Graphs/Implementation.html
 
 The first phase is creating the graph. The controls are as follows:
 
