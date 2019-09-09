@@ -17,7 +17,7 @@ When the end node is found, the minimum distance is printed and the minimum path
 
 If the algorithm runs out of nodes to parse and still hasn't found the end, it recognizes the graph is disconnected and stops.
 
-Here is a simple example of the application:
+Here is a simple example usage:
 
 ![](example_short.gif)
 
